@@ -1,34 +1,31 @@
 package db
 
 import (
+	"context"
 	"log"
-	"os"
-	"strings"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var DB *gorm.DB
+func DBConnection(collection string) *mongo.Collection {
 
-var DSN string
+	// Set client options
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 
-func DBConnection() {
-	var error error
-	var dsnString []string
+	// Connect to MongoDB
+	client, err := mongo.Connect(context.TODO(), clientOptions)
 
-	dsnString = append(dsnString, "host="+os.Getenv("HOST_DB"))
-	dsnString = append(dsnString, "user="+os.Getenv("USER_DB"))
-	dsnString = append(dsnString, "password="+os.Getenv("PASSWORD_DB"))
-	dsnString = append(dsnString, "dbname="+os.Getenv("NAME_DB"))
-	dsnString = append(dsnString, "port="+os.Getenv("PORT_DB"))
-	dsnString = append(dsnString, "sslmode="+os.Getenv("SSLMODE"))
-	DSN = strings.Join(dsnString, " ")
-
-	DB, error = gorm.Open(postgres.Open(DSN), &gorm.Config{})
-	if error != nil {
-		log.Fatal(error)
-	} else {
-		log.Println("DB connected")
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	// Check the connection
+	err = client.Ping(context.TODO(), nil)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return client.Database("db-api-golang").Collection(collection)
 }

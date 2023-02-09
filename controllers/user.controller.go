@@ -5,45 +5,56 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jcarvallo/golang-api-rest/db"
-	"github.com/jcarvallo/golang-api-rest/models"
-	"github.com/jcarvallo/golang-api-rest/utils"
+	"github.com/jcarvallo/golang-api-rest-with-mongodb/models"
+	"github.com/jcarvallo/golang-api-rest-with-mongodb/services"
+	"github.com/jcarvallo/golang-api-rest-with-mongodb/utils"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
-	var users []models.User
-	db.DB.Find(&users)
+	users, error := services.GetUsers()
+	if error != nil {
+		utils.RespondWithError(error, w)
+	}
 	json.NewEncoder(w).Encode(&users)
 }
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	params := mux.Vars(r)
-	db.DB.First(&user, params["id"])
-	if user.ID == 0 {
-		utils.RespondNotFound("User not found", w)
+	user, error := services.GetUser(params["id"])
+
+	if error != nil {
+		utils.RespondWithError(error, w)
 	}
-	db.DB.Model(&user).Association("Tasks").Find(&user.Tasks)
+
 	json.NewEncoder(w).Encode(&user)
 
 }
 func PostUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	json.NewDecoder(r.Body).Decode(&user)
-
-	createUser := db.DB.Create(&user)
-	error := createUser.Error
+	result, error := services.CreateUser(user)
 	if error != nil {
 		utils.RespondWithError(error, w)
 	}
-	json.NewEncoder(w).Encode(&user)
+	json.NewEncoder(w).Encode(result)
 }
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	params := mux.Vars(r)
-	db.DB.First(&user, params["id"])
-	if user.ID == 0 {
-		utils.RespondNotFound("User not found", w)
+	json.NewDecoder(r.Body).Decode(&user)
+	result, error := services.UpdateUser(user, params["id"])
+	if error != nil {
+		utils.RespondWithError(error, w)
 	}
-	db.DB.Unscoped().Delete(&user)
+	json.NewEncoder(w).Encode(result)
+}
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	error := services.DeleteUser(params["id"])
+
+	if error != nil {
+		utils.RespondWithError(error, w)
+	}
 	utils.RespondNotContent("User delete", w)
 }

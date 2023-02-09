@@ -8,5 +8,5 @@ var Routes = mux.NewRouter()
 
 func RoutersIndex() {
 	RoutesUser()
-	RoutesTasks()
+
 }
